@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Send Donation Message</title>
+</head>
+<body>
+  <h2>Send Message to Stream</h2>
+
+  <input id="name" placeholder="Your Name"><br><br>
+  <input id="amount" placeholder="Amount"><br><br>
+  <input id="message" placeholder="Message"><br><br>
+
+  <button onclick="sendData()">Send</button>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, addDoc, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.sendData = async function() {
+      const name = document.getElementById("name").value;
+      const amount = document.getElementById("amount").value;
+      const message = document.getElementById("message").value;
+
+      await addDoc(collection(db, "donations"), {
+        name,
+        amount,
+        message,
+        time: Date.now()
+      });
+
+      alert("Sent!");
+    }
+  </script>
+</body>
+</html>
