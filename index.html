@@ -1,37 +1,108 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <title>BD TTS System</title>
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: black;
+      color: white;
+    }
+    #donatePage, #alertPage {
+      display: none;
+    }
+    input {
+      padding: 10px;
+      margin: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      cursor: pointer;
+    }
+    #alertBox {
+      font-size: 30px;
+      margin-top: 20%;
+      color: #00ffcc;
+    }
+  </style>
+</head>
+
 <body>
-  <h1 id="alert"></h1>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!-- DONATE PAGE -->
+<div id="donatePage">
+  <h2>Send Message to Stream</h2>
 
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-    };
+  <input id="name" placeholder="Your Name"><br>
+  <input id="amount" placeholder="Amount"><br>
+  <input id="message" placeholder="Message"><br>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  <button onclick="sendData()">Send</button>
+</div>
 
-    const q = query(collection(db, "donations"), orderBy("time", "desc"));
+<!-- ALERT PAGE -->
+<div id="alertPage">
+  <div id="alertBox"></div>
+</div>
 
-    onSnapshot(q, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          const data = change.doc.data();
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, addDoc, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-          document.getElementById("alert").innerText =
-            `${data.name}: ${data.message}`;
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+};
 
-          // 🔊 TTS
-          const speech = new SpeechSynthesisUtterance(data.message);
-          speechSynthesis.speak(speech);
-        }
-      });
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Detect mode
+const params = new URLSearchParams(window.location.search);
+const mode = params.get("mode");
+
+// Show correct page
+if (mode === "alert") {
+  document.getElementById("alertPage").style.display = "block";
+
+  const q = query(collection(db, "donations"), orderBy("time", "desc"));
+
+  onSnapshot(q, (snapshot) => {
+    snapshot.docChanges().forEach((change) => {
+      if (change.type === "added") {
+        const data = change.doc.data();
+
+        const text = data.name + " says: " + data.message;
+        document.getElementById("alertBox").innerText = text;
+
+        // 🔊 TTS
+        const speech = new SpeechSynthesisUtterance(text);
+        speechSynthesis.speak(speech);
+      }
     });
-  </script>
+  });
+
+} else {
+  document.getElementById("donatePage").style.display = "block";
+
+  window.sendData = async function() {
+    const name = document.getElementById("name").value;
+    const amount = document.getElementById("amount").value;
+    const message = document.getElementById("message").value;
+
+    await addDoc(collection(db, "donations"), {
+      name,
+      amount,
+      message,
+      time: Date.now()
+    });
+
+    alert("Message sent!");
+  }
+}
+</script>
+
 </body>
 </html>
